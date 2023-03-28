@@ -443,6 +443,8 @@ public class GitWorkingDirectory {
 				String url = JenkinsResultsParserUtil.getGitHubApiUrl(
 					_gitRepositoryName, receiverUserName, "pulls");
 
+				System.out.println(requestJSONObject.toString(2));
+
 				JSONObject responseJSONObject;
 
 				try {
@@ -2044,6 +2046,11 @@ public class GitWorkingDirectory {
 				1000 * 60 * 10, sb.toString());
 
 			if (executionResult.getExitValue() != 0) {
+				System.out.println(
+					"execution result: " + executionResult.getExitValue());
+				System.out.println(executionResult.getStandardOut());
+				System.out.println(executionResult.getStandardError());
+
 				return null;
 			}
 		}

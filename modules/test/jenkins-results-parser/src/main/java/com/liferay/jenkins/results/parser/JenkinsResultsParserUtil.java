@@ -5257,6 +5257,8 @@ public class JenkinsResultsParserUtil {
 	protected static String initCacheURL() {
 		String cacheDirPath = System.getenv("CACHE_DIR");
 
+		System.out.println("PDY - cacheDirPath: " + cacheDirPath);
+
 		if ((cacheDirPath == null) &&
 			(System.getenv("JENKINS_GITHUB_URL") != null)) {
 
@@ -5272,6 +5274,11 @@ public class JenkinsResultsParserUtil {
 						cacheDir, cachedRepository);
 
 					if (!cacheRepositoryDir.exists()) {
+						System.out.println(
+							"cacheRepository " + cacheRepositoryDir.getName() +
+								" does not exist at " +
+									cacheRepositoryDir.getPath());
+
 						break;
 					}
 				}
