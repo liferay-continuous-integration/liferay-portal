@@ -64,16 +64,12 @@ public class BackgroundTaskExecutorRegistryImpl
 	public synchronized void unregisterBackgroundTaskExecutor(
 		String backgroundTaskExecutorClassName) {
 
-		if (!_serviceRegistrations.containsKey(
-				backgroundTaskExecutorClassName)) {
-
-			return;
-		}
-
 		ServiceRegistration<BackgroundTaskExecutor> serviceRegistration =
-			_serviceRegistrations.get(backgroundTaskExecutorClassName);
+			_serviceRegistrations.remove(backgroundTaskExecutorClassName);
 
-		serviceRegistration.unregister();
+		if (serviceRegistration != null) {
+			serviceRegistration.unregister();
+		}
 	}
 
 	@Activate
