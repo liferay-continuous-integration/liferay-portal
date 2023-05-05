@@ -1061,7 +1061,7 @@ public class CommerceOrderContentDisplayContext {
 
 	public boolean isCommerceSiteTypeB2C() {
 		if (_commerceContext.getCommerceSiteType() ==
-			CommerceChannelConstants.SITE_TYPE_B2C) {
+				CommerceChannelConstants.SITE_TYPE_B2C) {
 
 			return true;
 		}
