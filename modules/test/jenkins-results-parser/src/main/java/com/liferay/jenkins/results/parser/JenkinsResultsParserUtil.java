@@ -163,6 +163,7 @@ public class JenkinsResultsParserUtil {
 	};
 
 	public static boolean debug;
+	public static String dummy = "dummy";
 
 	public static void addRedactToken(String token) {
 		if (_redactTokens.isEmpty()) {
