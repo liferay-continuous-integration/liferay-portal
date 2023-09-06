@@ -78,21 +78,31 @@ public class ObjectValidationRuleDTOConverter
 					objectDefinition.getExternalReferenceCode();
 				objectDefinitionId =
 					serviceBuilderObjectValidationRule.getObjectDefinitionId();
+				script = serviceBuilderObjectValidationRule.getScript();
 
-				if (FeatureFlagManagerUtil.isEnabled("LPS-187846")) {
-					objectValidationRuleSettings =
-						TransformUtil.transformToArray(
+				setObjectValidationRuleSettings(
+					() -> {
+						if (!FeatureFlagManagerUtil.isEnabled("LPS-187846")) {
+							return null;
+						}
+
+						return TransformUtil.transformToArray(
 							serviceBuilderObjectValidationRule.
 								getObjectValidationRuleSettings(),
 							objectValidationRuleSetting ->
 								_toObjectValidationRuleSetting(
 									objectValidationRuleSetting),
 							ObjectValidationRuleSetting.class);
-					outputType = ObjectValidationRule.OutputType.create(
-						serviceBuilderObjectValidationRule.getOutputType());
-				}
+					});
+				setOutputType(
+					() -> {
+						if (!FeatureFlagManagerUtil.isEnabled("LPS-187846")) {
+							return null;
+						}
 
-				script = serviceBuilderObjectValidationRule.getScript();
+						return ObjectValidationRule.OutputType.create(
+							serviceBuilderObjectValidationRule.getOutputType());
+					});
 			}
 		};
 	}
