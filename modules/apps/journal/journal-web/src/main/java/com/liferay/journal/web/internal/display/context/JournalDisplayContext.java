@@ -1048,10 +1048,7 @@ public class JournalDisplayContext {
 						_themeDisplay.getLocale());
 
 					verticalNavItem.setActive(
-						Objects.equals(
-							ParamUtil.getLong(
-								_httpServletRequest, "ddmStructureId"),
-							ddmStructure.getStructureId()));
+						getDDMStructureId() == ddmStructure.getStructureId());
 					verticalNavItem.setHref(
 						PortletURLBuilder.createRenderURL(
 							_liferayPortletResponse
@@ -1078,10 +1075,7 @@ public class JournalDisplayContext {
 				String name = LanguageUtil.get(
 					_httpServletRequest, "content-library");
 
-				verticalNavItem.setActive(
-					Validator.isNull(
-						ParamUtil.getLong(
-							_httpServletRequest, "ddmStructureId")));
+				verticalNavItem.setActive(getDDMStructureId() == 0);
 				verticalNavItem.setHref(
 					PortletURLBuilder.createRenderURL(
 						_liferayPortletResponse
