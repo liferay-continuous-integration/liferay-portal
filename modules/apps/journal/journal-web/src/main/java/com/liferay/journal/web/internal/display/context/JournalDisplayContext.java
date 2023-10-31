@@ -1048,9 +1048,6 @@ public class JournalDisplayContext {
 
 			verticalNavItemList.add(
 				verticalNavItem -> {
-					String name = ddmStructure.getName(
-						_themeDisplay.getLocale());
-
 					verticalNavItem.setActive(
 						getDDMStructureId() == ddmStructure.getStructureId());
 					verticalNavItem.setHref(
@@ -1059,6 +1056,10 @@ public class JournalDisplayContext {
 						).setParameter(
 							"ddmStructureId", ddmStructure.getStructureId()
 						).buildString());
+
+					String name = ddmStructure.getName(
+						_themeDisplay.getLocale());
+
 					verticalNavItem.setId(name);
 					verticalNavItem.setLabel(name);
 				});
@@ -1070,14 +1071,15 @@ public class JournalDisplayContext {
 	public VerticalNavItemList getVerticalNavItemList() {
 		return VerticalNavItemListBuilder.add(
 			verticalNavItem -> {
-				String name = LanguageUtil.get(
-					_httpServletRequest, "content-library");
-
 				verticalNavItem.setActive(getDDMStructureId() == 0);
 				verticalNavItem.setHref(
 					PortletURLBuilder.createRenderURL(
 						_liferayPortletResponse
 					).buildString());
+
+				String name = LanguageUtil.get(
+					_httpServletRequest, "content-library");
+
 				verticalNavItem.setId(name);
 				verticalNavItem.setLabel(name);
 			}
