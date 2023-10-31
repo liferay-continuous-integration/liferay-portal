@@ -97,12 +97,6 @@ else {
 				</clay:row>
 			</c:when>
 			<c:otherwise>
-				<c:if test="<%= !journalDisplayContext.isNavigationMine() && !journalDisplayContext.isNavigationRecent() %>">
-					<liferay-site-navigation:breadcrumb
-						breadcrumbEntries="<%= JournalPortletUtil.getPortletBreadcrumbEntries(journalDisplayContext.getFolder(), request, journalDisplayContext.getPortletURL(null)) %>"
-					/>
-				</c:if>
-
 				<%@ include file="/view_form.jspf" %>
 			</c:otherwise>
 		</c:choose>
