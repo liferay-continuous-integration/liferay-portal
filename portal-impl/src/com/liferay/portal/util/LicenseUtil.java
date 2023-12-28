@@ -58,6 +58,7 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
 /**
+ * @author Nobody
  * @author Amos Fong
  */
 public class LicenseUtil {
