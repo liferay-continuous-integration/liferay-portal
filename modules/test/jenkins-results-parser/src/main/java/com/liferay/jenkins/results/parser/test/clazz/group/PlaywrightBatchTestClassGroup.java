@@ -779,10 +779,6 @@ public class PlaywrightBatchTestClassGroup extends BatchTestClassGroup {
 					playwrightBaseDir,
 					"npm run playwright test -- --list --reporter=json");
 
-				int index = result.indexOf("\n{");
-
-				result = result.substring(index);
-
 				result = result.replace(
 					"Finished executing Bash commands.", "");
 
