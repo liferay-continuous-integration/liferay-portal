@@ -401,6 +401,7 @@ export interface IFrontendDataSetProps {
 	snapshots?: Array<ISnapshots>;
 	snapshotsEnabled?: boolean;
 	sorts?: TSort[];
+	startupViewDataSetSnapshotERC?: null | string;
 	style?: 'default' | 'fluid' | 'stacked';
 	uniformActionsDisplay?: boolean;
 	views: IView[];
