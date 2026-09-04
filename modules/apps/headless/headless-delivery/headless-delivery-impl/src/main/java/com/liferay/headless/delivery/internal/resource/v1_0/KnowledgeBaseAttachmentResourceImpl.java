@@ -50,6 +50,10 @@ public class KnowledgeBaseAttachmentResourceImpl
 	public void deleteKnowledgeBaseAttachment(Long knowledgeBaseAttachmentId)
 		throws Exception {
 
+		_kbArticleModelResourcePermission.check(
+			PermissionThreadLocal.getPermissionChecker(),
+			_getKBArticle(knowledgeBaseAttachmentId), ActionKeys.UPDATE);
+
 		_portletFileRepository.deletePortletFileEntry(
 			knowledgeBaseAttachmentId);
 	}
