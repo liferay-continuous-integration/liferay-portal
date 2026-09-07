@@ -35,7 +35,7 @@ export interface ISnapshots {
 }
 
 export interface IUserPreferences {
-	startupSnapshotERC: null | string;
+	initialSnapshotERC: null | string;
 }
 
 export type TViewsContextDispatch = ({

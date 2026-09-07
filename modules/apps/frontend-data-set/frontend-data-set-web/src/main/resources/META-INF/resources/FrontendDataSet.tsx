@@ -656,14 +656,14 @@ const FrontendDataSetContent = ({
 			visibleFieldNames: initialVisibleFieldNames,
 		};
 
-		const startupSnapshotERC = userPreferences?.startupSnapshotERC;
+		const initialSnapshotERC = userPreferences?.initialSnapshotERC;
 
 		if (
-			startupSnapshotERC &&
-			getSnapshotByERC(parsedSnapshots, startupSnapshotERC) &&
+			initialSnapshotERC &&
+			getSnapshotByERC(parsedSnapshots, initialSnapshotERC) &&
 			hasURLState()
 		) {
-			initialViewsState.activeSnapshotERC = startupSnapshotERC;
+			initialViewsState.activeSnapshotERC = initialSnapshotERC;
 			initialViewsState.snapshotUpdated = true;
 		}
 
@@ -1973,7 +1973,7 @@ const FrontendDataSetContent = ({
 
 	const handleSnapshotChangeRef = useRef(handleSnapshotChange);
 	const hasURLStateRef = useRef(hasURLState);
-	const startupSnapshotERCAppliedRef = useRef(false);
+	const initialSnapshotERCAppliedRef = useRef(false);
 
 	useLayoutEffect(() => {
 		handleSnapshotChangeRef.current = handleSnapshotChange;
@@ -1981,20 +1981,20 @@ const FrontendDataSetContent = ({
 	});
 
 	useEffect(() => {
-		const startupSnapshotERC = userPreferences?.startupSnapshotERC;
+		const initialSnapshotERC = userPreferences?.initialSnapshotERC;
 
 		if (
-			startupSnapshotERCAppliedRef.current ||
+			initialSnapshotERCAppliedRef.current ||
 			!globalFDSStateInitialized ||
-			!startupSnapshotERC
+			!initialSnapshotERC
 		) {
 			return;
 		}
 
-		startupSnapshotERCAppliedRef.current = true;
+		initialSnapshotERCAppliedRef.current = true;
 
 		if (
-			!getSnapshotByERC(viewsState.snapshots, startupSnapshotERC) ||
+			!getSnapshotByERC(viewsState.snapshots, initialSnapshotERC) ||
 			hasURLStateRef.current()
 		) {
 			return;
@@ -2003,7 +2003,7 @@ const FrontendDataSetContent = ({
 		handleSnapshotChangeRef.current({
 			defaultSnapshot: viewsState.defaultSnapshot,
 			snapshots: viewsState.snapshots,
-			value: startupSnapshotERC,
+			value: initialSnapshotERC,
 		});
 	}, [globalFDSStateInitialized, userPreferences, viewsState]);
 

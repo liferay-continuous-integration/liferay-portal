@@ -79,7 +79,7 @@ public class SaveDataSetUserPreferencesMVCResourceCommand
 		JSONObject payloadJSONObject = _jsonFactory.createJSONObject(
 			ParamUtil.getString(httpServletRequest, "preferences"));
 
-		_checkStartupSnapshotERCUserPreference(
+		_checkInitialSnapshotERCUserPreference(
 			companyId, payloadJSONObject, preferencesJSONObject, user);
 
 		ObjectDefinition objectDefinition =
@@ -106,15 +106,15 @@ public class SaveDataSetUserPreferencesMVCResourceCommand
 			resourceRequest, resourceResponse, preferencesJSONObject);
 	}
 
-	private void _checkStartupSnapshotERCUserPreference(
+	private void _checkInitialSnapshotERCUserPreference(
 			long companyId, JSONObject payloadJSONObject,
 			JSONObject preferencesJSONObject, User user)
 		throws Exception {
 
-		String startupSnapshotERC = payloadJSONObject.getString(
-			"startupSnapshotERC");
+		String initialSnapshotERC = payloadJSONObject.getString(
+			"initialSnapshotERC");
 
-		if (Validator.isNull(startupSnapshotERC)) {
+		if (Validator.isNull(initialSnapshotERC)) {
 			return;
 		}
 
@@ -124,12 +124,12 @@ public class SaveDataSetUserPreferencesMVCResourceCommand
 					"L_DATA_SET_SNAPSHOT", companyId);
 
 		ObjectEntry objectEntry = _objectEntryLocalService.fetchObjectEntry(
-			startupSnapshotERC, 0, objectDefinition.getObjectDefinitionId());
+			initialSnapshotERC, 0, objectDefinition.getObjectDefinitionId());
 
 		if (objectEntry == null) {
 			throw new PortalException(
 				"Unable to find data set snapshot with external reference " +
-					"code " + startupSnapshotERC);
+					"code " + initialSnapshotERC);
 		}
 
 		if ((objectEntry.getUserId() != user.getUserId()) &&
@@ -141,10 +141,10 @@ public class SaveDataSetUserPreferencesMVCResourceCommand
 
 			throw new PrincipalException(
 				"User does not have permission to access data set snapshot " +
-					"with external reference code " + startupSnapshotERC);
+					"with external reference code " + initialSnapshotERC);
 		}
 
-		preferencesJSONObject.put("startupSnapshotERC", startupSnapshotERC);
+		preferencesJSONObject.put("initialSnapshotERC", initialSnapshotERC);
 	}
 
 	@Reference

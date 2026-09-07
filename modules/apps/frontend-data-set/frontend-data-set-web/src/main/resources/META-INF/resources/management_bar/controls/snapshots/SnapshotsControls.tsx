@@ -511,19 +511,19 @@ const SnapshotsControls = () => {
 			});
 	};
 
-	const setStartupSnapshotERC = () => {
+	const setInitialSnapshotERC = () => {
 		if (!activeSnapshot) {
 			return;
 		}
 
 		updateUserPreferences({
 			...userPreferences,
-			startupSnapshotERC: activeSnapshot.erc,
+			initialSnapshotERC: activeSnapshot.erc,
 		})
 			.then(() => {
 				openToast({
 					message: Liferay.Language.get(
-						'the-user-view-was-set-as-startup'
+						'the-user-view-was-set-as-the-initial-view'
 					),
 					type: 'success',
 				});
@@ -678,14 +678,14 @@ const SnapshotsControls = () => {
 												{snapshot.label}
 
 												{snapshot.erc ===
-													userPreferences?.startupSnapshotERC && (
+													userPreferences?.initialSnapshotERC && (
 													<ClayLabel
 														aria-hidden="true"
 														className="ml-2"
 														displayType="info"
 													>
 														{Liferay.Language.get(
-															'startup-view'
+															'initial-view'
 														)}
 													</ClayLabel>
 												)}
@@ -746,17 +746,17 @@ const SnapshotsControls = () => {
 
 						{activeSnapshotERC &&
 							activeSnapshotERC !==
-								userPreferences?.startupSnapshotERC && (
+								userPreferences?.initialSnapshotERC && (
 								<ClayDropDown.Item
 									onClick={() => {
-										setStartupSnapshotERC();
+										setInitialSnapshotERC();
 
 										setActionsDropdownActive(false);
 									}}
 									symbolLeft="star"
 								>
 									{Liferay.Language.get(
-										'set-as-startup-view'
+										'set-as-initial-view'
 									)}
 								</ClayDropDown.Item>
 							)}

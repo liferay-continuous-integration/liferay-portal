@@ -130,8 +130,8 @@ const viewsActions: TViewsActions = {
 			snapshotUpdated: false,
 			snapshots: updatedSnapshots,
 			userPreferences:
-				userPreferences?.startupSnapshotERC === value.snapshotERC
-					? {...userPreferences, startupSnapshotERC: null}
+				userPreferences?.initialSnapshotERC === value.snapshotERC
+					? {...userPreferences, initialSnapshotERC: null}
 					: userPreferences,
 		};
 	},
