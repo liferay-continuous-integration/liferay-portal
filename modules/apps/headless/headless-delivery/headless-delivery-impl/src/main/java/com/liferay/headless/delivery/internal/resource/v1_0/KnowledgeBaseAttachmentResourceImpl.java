@@ -69,6 +69,10 @@ public class KnowledgeBaseAttachmentResourceImpl
 			_kbArticleService.getLatestKBArticleByExternalReferenceCode(
 				siteId, knowledgeBaseArticleExternalReferenceCode);
 
+		_kbArticleModelResourcePermission.check(
+			PermissionThreadLocal.getPermissionChecker(), kbArticle,
+			ActionKeys.UPDATE);
+
 		FileEntry fileEntry =
 			kbArticle.getAttachmentsFileEntryByExternalReferenceCode(
 				externalReferenceCode);
