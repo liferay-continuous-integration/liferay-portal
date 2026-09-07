@@ -170,8 +170,7 @@ public class KnowledgeBaseAttachmentResourceImpl
 		}
 
 		KBArticle kbArticle = _kbArticleLocalService.fetchLatestKBArticle(
-			GetterUtil.getLong(folder.getName()),
-			WorkflowConstants.STATUS_APPROVED);
+			GetterUtil.getLong(folder.getName()), WorkflowConstants.STATUS_ANY);
 
 		if ((kbArticle == null) ||
 			(kbArticle.getAttachmentsFolderId() != fileEntry.getFolderId())) {
