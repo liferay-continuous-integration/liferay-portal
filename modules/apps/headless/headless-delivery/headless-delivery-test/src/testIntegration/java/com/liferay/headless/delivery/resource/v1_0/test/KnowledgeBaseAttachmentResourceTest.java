@@ -6,6 +6,8 @@
 package com.liferay.headless.delivery.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.headless.delivery.client.dto.v1_0.KnowledgeBaseAttachment;
 import com.liferay.headless.delivery.client.http.HttpInvoker;
 import com.liferay.headless.delivery.client.resource.v1_0.KnowledgeBaseAttachmentResource;
@@ -13,21 +15,29 @@ import com.liferay.knowledge.base.model.KBArticle;
 import com.liferay.knowledge.base.model.KBFolder;
 import com.liferay.knowledge.base.service.KBArticleLocalServiceUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.test.constants.TestDataConstants;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
@@ -77,6 +87,19 @@ public class KnowledgeBaseAttachmentResourceTest
 			knowledgeBaseAttachmentResource.
 				getKnowledgeBaseAttachmentHttpResponse(
 					knowledgeBaseAttachment.getId()));
+
+		// File entry that is not a knowledge base attachment
+
+		FileEntry fileEntry = _addFileEntry();
+
+		assertHttpResponseStatusCode(
+			404,
+			knowledgeBaseAttachmentResource.
+				deleteKnowledgeBaseAttachmentHttpResponse(
+					fileEntry.getFileEntryId()));
+
+		Assert.assertNotNull(
+			DLAppLocalServiceUtil.getFileEntry(fileEntry.getFileEntryId()));
 	}
 
 	@Override
@@ -126,6 +149,32 @@ public class KnowledgeBaseAttachmentResourceTest
 					testDeleteSiteKnowledgeBaseArticleByExternalReferenceCodeKnowledgeBaseArticleExternalReferenceCodeKnowledgeBaseAttachmentByExternalReferenceCode_getSiteId(),
 					prevKBArticle.getExternalReferenceCode(),
 					newKnowledgeBaseAttachment.getExternalReferenceCode()));
+
+		// Knowledge base attachment without update permission
+
+		KBArticle viewableKBArticle = _addViewableKBArticle();
+
+		KnowledgeBaseAttachment viewableKnowledgeBaseAttachment =
+			_addKnowledgeBaseAttachment(viewableKBArticle);
+
+		KnowledgeBaseAttachmentResource
+			siteMemberKnowledgeBaseAttachmentResource =
+				_getSiteMemberKnowledgeBaseAttachmentResource();
+
+		assertHttpResponseStatusCode(
+			403,
+			siteMemberKnowledgeBaseAttachmentResource.
+				deleteSiteKnowledgeBaseArticleByExternalReferenceCodeKnowledgeBaseArticleExternalReferenceCodeKnowledgeBaseAttachmentByExternalReferenceCodeHttpResponse(
+					viewableKBArticle.getGroupId(),
+					viewableKBArticle.getExternalReferenceCode(),
+					viewableKnowledgeBaseAttachment.
+						getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			200,
+			knowledgeBaseAttachmentResource.
+				getKnowledgeBaseAttachmentHttpResponse(
+					viewableKnowledgeBaseAttachment.getId()));
 	}
 
 	@Override
@@ -143,7 +192,7 @@ public class KnowledgeBaseAttachmentResourceTest
 				_getUserWithoutPermissionsKnowledgeBaseAttachmentResource();
 
 		assertHttpResponseStatusCode(
-			403,
+			404,
 			userWithoutPermissionsKnowledgeBaseAttachmentResource.
 				getKnowledgeBaseAttachmentHttpResponse(
 					knowledgeBaseAttachment.getId()));
@@ -153,6 +202,16 @@ public class KnowledgeBaseAttachmentResourceTest
 			knowledgeBaseAttachmentResource.
 				getKnowledgeBaseAttachmentHttpResponse(
 					knowledgeBaseAttachment.getId()));
+
+		// Knowledge base attachment on an unapproved knowledge base article
+
+		FileEntry draftFileEntry = _addDraftKBArticleAttachment();
+
+		assertHttpResponseStatusCode(
+			200,
+			knowledgeBaseAttachmentResource.
+				getKnowledgeBaseAttachmentHttpResponse(
+					draftFileEntry.getFileEntryId()));
 	}
 
 	@Override
@@ -364,16 +423,63 @@ public class KnowledgeBaseAttachmentResourceTest
 		return _addKnowledgeBaseAttachment();
 	}
 
+	private KBArticle _addDraftKBArticle() throws Exception {
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setAddGroupPermissions(true);
+		serviceContext.setScopeGroupId(testGroup.getGroupId());
+		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_SAVE_DRAFT);
+
+		return _addKBArticle(serviceContext, TestPropsValues.getUserId());
+	}
+
+	private FileEntry _addDraftKBArticleAttachment() throws Exception {
+		KBArticle kbArticle = _addDraftKBArticle();
+
+		return KBArticleLocalServiceUtil.addAttachment(
+			TestPropsValues.getUserId(), kbArticle.getResourcePrimKey(),
+			RandomTestUtil.randomString() + ".txt",
+			new ByteArrayInputStream(TestDataConstants.TEST_BYTE_ARRAY),
+			ContentTypes.TEXT_PLAIN);
+	}
+
+	private FileEntry _addFileEntry() throws Exception {
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setAddGroupPermissions(true);
+		serviceContext.setScopeGroupId(testGroup.getGroupId());
+
+		Folder folder = DLAppLocalServiceUtil.addFolder(
+			null, TestPropsValues.getUserId(), testGroup.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			serviceContext);
+
+		return DLAppLocalServiceUtil.addFileEntry(
+			null, TestPropsValues.getUserId(), testGroup.getGroupId(),
+			folder.getFolderId(), RandomTestUtil.randomString() + ".txt",
+			ContentTypes.TEXT_PLAIN, RandomTestUtil.randomString(), null, null,
+			null, TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
+			serviceContext);
+	}
+
 	private KBArticle _addKBArticle() throws Exception {
 		ServiceContext serviceContext = new ServiceContext();
 
 		serviceContext.setAddGuestPermissions(true);
 		serviceContext.setScopeGroupId(testGroup.getGroupId());
 
+		return _addKBArticle(
+			serviceContext,
+			UserLocalServiceUtil.getGuestUserId(testGroup.getCompanyId()));
+	}
+
+	private KBArticle _addKBArticle(ServiceContext serviceContext, long userId)
+		throws Exception {
+
 		return KBArticleLocalServiceUtil.addKBArticle(
-			null, UserLocalServiceUtil.getGuestUserId(testGroup.getCompanyId()),
-			PortalUtil.getClassNameId(KBFolder.class.getName()), 0,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			null, userId, PortalUtil.getClassNameId(KBFolder.class.getName()),
+			0, RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
 			null, RandomTestUtil.nextDate(), null, null, null, serviceContext);
 	}
@@ -381,10 +487,17 @@ public class KnowledgeBaseAttachmentResourceTest
 	private KnowledgeBaseAttachment _addKnowledgeBaseAttachment()
 		throws Exception {
 
+		return _addKnowledgeBaseAttachment(_kbArticle);
+	}
+
+	private KnowledgeBaseAttachment _addKnowledgeBaseAttachment(
+			KBArticle kbArticle)
+		throws Exception {
+
 		return knowledgeBaseAttachmentResource.
 			postKnowledgeBaseArticleKnowledgeBaseAttachment(
-				_kbArticle.getResourcePrimKey(),
-				randomKnowledgeBaseAttachment(), getMultipartFiles());
+				kbArticle.getResourcePrimKey(), randomKnowledgeBaseAttachment(),
+				getMultipartFiles());
 	}
 
 	private KnowledgeBaseAttachment _addRestrictedKnowledgeBaseAttachment()
@@ -396,26 +509,21 @@ public class KnowledgeBaseAttachmentResourceTest
 		serviceContext.setAddGuestPermissions(false);
 		serviceContext.setScopeGroupId(testGroup.getGroupId());
 
-		KBArticle kbArticle = KBArticleLocalServiceUtil.addKBArticle(
-			null, TestPropsValues.getUserId(),
-			PortalUtil.getClassNameId(KBFolder.class.getName()), 0,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
-			null, RandomTestUtil.nextDate(), null, null, null, serviceContext);
-
-		return knowledgeBaseAttachmentResource.
-			postKnowledgeBaseArticleKnowledgeBaseAttachment(
-				kbArticle.getResourcePrimKey(), randomKnowledgeBaseAttachment(),
-				getMultipartFiles());
+		return _addKnowledgeBaseAttachment(
+			_addKBArticle(serviceContext, TestPropsValues.getUserId()));
 	}
 
-	private KnowledgeBaseAttachmentResource
-			_getUserWithoutPermissionsKnowledgeBaseAttachmentResource()
-		throws Exception {
+	private KBArticle _addViewableKBArticle() throws Exception {
+		ServiceContext serviceContext = new ServiceContext();
 
-		String password = RandomTestUtil.randomString();
+		serviceContext.setAddGroupPermissions(true);
+		serviceContext.setScopeGroupId(testGroup.getGroupId());
 
-		User user = UserTestUtil.addUser(testCompany, password);
+		return _addKBArticle(serviceContext, TestPropsValues.getUserId());
+	}
+
+	private KnowledgeBaseAttachmentResource _getKnowledgeBaseAttachmentResource(
+		String password, User user) {
 
 		return KnowledgeBaseAttachmentResource.builder(
 		).authentication(
@@ -426,6 +534,35 @@ public class KnowledgeBaseAttachmentResourceTest
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
+	}
+
+	private KnowledgeBaseAttachmentResource
+			_getSiteMemberKnowledgeBaseAttachmentResource()
+		throws Exception {
+
+		String password = RandomTestUtil.randomString();
+
+		User user = UserTestUtil.addUser(testCompany, password);
+
+		_users.add(user);
+
+		UserLocalServiceUtil.addGroupUsers(
+			testGroup.getGroupId(), new long[] {user.getUserId()});
+
+		return _getKnowledgeBaseAttachmentResource(password, user);
+	}
+
+	private KnowledgeBaseAttachmentResource
+			_getUserWithoutPermissionsKnowledgeBaseAttachmentResource()
+		throws Exception {
+
+		String password = RandomTestUtil.randomString();
+
+		User user = UserTestUtil.addUser(testCompany, password);
+
+		_users.add(user);
+
+		return _getKnowledgeBaseAttachmentResource(password, user);
 	}
 
 	private String _read(String url) throws Exception {
@@ -443,5 +580,8 @@ public class KnowledgeBaseAttachmentResourceTest
 
 	private KBArticle _kbArticle;
 	private String _tempFileName;
+
+	@DeleteAfterTestRun
+	private final List<User> _users = new ArrayList<>();
 
 }
