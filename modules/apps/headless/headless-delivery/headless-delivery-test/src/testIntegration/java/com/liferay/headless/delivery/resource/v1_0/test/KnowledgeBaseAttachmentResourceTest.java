@@ -212,6 +212,17 @@ public class KnowledgeBaseAttachmentResourceTest
 			knowledgeBaseAttachmentResource.
 				getKnowledgeBaseAttachmentHttpResponse(
 					draftFileEntry.getFileEntryId()));
+
+		// File entry in a folder named after a knowledge base article
+
+		FileEntry fileEntry = _addFileEntry(
+			String.valueOf(_kbArticle.getResourcePrimKey()));
+
+		assertHttpResponseStatusCode(
+			404,
+			knowledgeBaseAttachmentResource.
+				getKnowledgeBaseAttachmentHttpResponse(
+					fileEntry.getFileEntryId()));
 	}
 
 	@Override
@@ -444,6 +455,10 @@ public class KnowledgeBaseAttachmentResourceTest
 	}
 
 	private FileEntry _addFileEntry() throws Exception {
+		return _addFileEntry(RandomTestUtil.randomString());
+	}
+
+	private FileEntry _addFileEntry(String folderName) throws Exception {
 		ServiceContext serviceContext = new ServiceContext();
 
 		serviceContext.setAddGroupPermissions(true);
@@ -451,9 +466,8 @@ public class KnowledgeBaseAttachmentResourceTest
 
 		Folder folder = DLAppLocalServiceUtil.addFolder(
 			null, TestPropsValues.getUserId(), testGroup.getGroupId(),
-			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			serviceContext);
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, folderName,
+			RandomTestUtil.randomString(), serviceContext);
 
 		return DLAppLocalServiceUtil.addFileEntry(
 			null, TestPropsValues.getUserId(), testGroup.getGroupId(),
