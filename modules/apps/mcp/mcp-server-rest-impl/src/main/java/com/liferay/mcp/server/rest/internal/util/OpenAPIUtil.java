@@ -56,7 +56,7 @@ public class OpenAPIUtil {
 	public static VulcanRequestForwarder.Request getRequest(
 			String basePath, Map<String, String> headers,
 			JSONObject inputJSONObject, JSONObject openAPIJSONObject,
-			String toolName, User user)
+			String restrictFields, String toolName, User user)
 		throws Exception {
 
 		byte[] body;
@@ -132,7 +132,7 @@ public class OpenAPIUtil {
 				String path = basePath + _getPath(inputJSONObject, operation);
 
 				String queryString = _getQueryString(
-					inputJSONObject, operation);
+					inputJSONObject, operation, restrictFields);
 
 				if (queryString.isEmpty()) {
 					return path;
@@ -151,7 +151,7 @@ public class OpenAPIUtil {
 
 	public static Tool getTool(
 		boolean injectVulcanParameters, JSONObject openAPIJSONObject,
-		String toolName) {
+		String restrictFields, String toolName) {
 
 		Operation operation = _getOperation(openAPIJSONObject, toolName);
 
@@ -165,7 +165,7 @@ public class OpenAPIUtil {
 					() -> _getInputSchema(
 						injectVulcanParameters, operation._method,
 						openAPIJSONObject, operation._operationJSONObject,
-						operation._pathParametersJSONArray));
+						operation._pathParametersJSONArray, restrictFields));
 
 				setName(() -> toolName);
 			}
@@ -571,7 +571,7 @@ public class OpenAPIUtil {
 	private static Map<String, Object> _getInputSchema(
 		boolean injectVulcanParameters, String method,
 		JSONObject openAPIJSONObject, JSONObject operationJSONObject,
-		JSONArray pathParametersJSONArray) {
+		JSONArray pathParametersJSONArray, String restrictFields) {
 
 		Map<String, Object> properties = new LinkedHashMap<>();
 		List<String> requiredPropertyNames = new ArrayList<>();
@@ -634,6 +634,11 @@ public class OpenAPIUtil {
 
 		Collection<String> responseFieldNames = _getResponseFieldNames(
 			openAPIJSONObject, operationJSONObject);
+
+		if (Validator.isNotNull(restrictFields)) {
+			responseFieldNames.removeAll(
+				Arrays.asList(StringUtil.split(restrictFields)));
+		}
 
 		Set<String> visitedParameterNames = new HashSet<>();
 
@@ -969,7 +974,8 @@ public class OpenAPIUtil {
 	}
 
 	private static String _getQueryString(
-		JSONObject inputJSONObject, Operation operation) {
+		JSONObject inputJSONObject, Operation operation,
+		String restrictFields) {
 
 		StringBundler sb = new StringBundler();
 
@@ -996,7 +1002,16 @@ public class OpenAPIUtil {
 		}
 
 		if (Objects.equals(operation._method, "get")) {
-			_appendQueryParameter("restrictFields", sb, "actions");
+			if (Validator.isNull(restrictFields)) {
+				restrictFields = "actions";
+			}
+			else {
+				restrictFields = "actions," + restrictFields;
+			}
+		}
+
+		if (Validator.isNotNull(restrictFields)) {
+			_appendQueryParameter("restrictFields", sb, restrictFields);
 		}
 
 		return sb.toString();
