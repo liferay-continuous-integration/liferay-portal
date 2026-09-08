@@ -754,9 +754,7 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 						"id,inQueueSince,task[name,url],url,why"),
 					false, 0, 0, 5000);
 
-			if ((queueItemJSONObject == null) ||
-				!queueItemJSONObject.has("id")) {
-
+			if (!queueItemJSONObject.has("id")) {
 				return null;
 			}
 
