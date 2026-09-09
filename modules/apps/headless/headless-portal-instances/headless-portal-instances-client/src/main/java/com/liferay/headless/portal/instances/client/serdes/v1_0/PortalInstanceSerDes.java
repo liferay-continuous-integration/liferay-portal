@@ -90,6 +90,16 @@ public class PortalInstanceSerDes {
 			sb.append("\"");
 		}
 
+		if (portalInstance.getMaxUsers() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"maxUsers\": ");
+
+			sb.append(portalInstance.getMaxUsers());
+		}
+
 		if (portalInstance.getPortalInstanceId() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -179,6 +189,13 @@ public class PortalInstanceSerDes {
 			map.put("domain", String.valueOf(portalInstance.getDomain()));
 		}
 
+		if (portalInstance.getMaxUsers() == null) {
+			map.put("maxUsers", null);
+		}
+		else {
+			map.put("maxUsers", String.valueOf(portalInstance.getMaxUsers()));
+		}
+
 		if (portalInstance.getPortalInstanceId() == null) {
 			map.put("portalInstanceId", null);
 		}
@@ -235,6 +252,9 @@ public class PortalInstanceSerDes {
 			else if (Objects.equals(jsonParserFieldName, "domain")) {
 				return false;
 			}
+			else if (Objects.equals(jsonParserFieldName, "maxUsers")) {
+				return false;
+			}
 			else if (Objects.equals(jsonParserFieldName, "portalInstanceId")) {
 				return false;
 			}
@@ -275,6 +295,12 @@ public class PortalInstanceSerDes {
 			else if (Objects.equals(jsonParserFieldName, "domain")) {
 				if (jsonParserFieldValue != null) {
 					portalInstance.setDomain((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "maxUsers")) {
+				if (jsonParserFieldValue != null) {
+					portalInstance.setMaxUsers(
+						Integer.valueOf((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "portalInstanceId")) {
@@ -377,4 +403,4 @@ public class PortalInstanceSerDes {
 	}
 
 }
-// LIFERAY-REST-BUILDER-HASH:1493873890
+// LIFERAY-REST-BUILDER-HASH:214425422

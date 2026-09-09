@@ -86,6 +86,48 @@ public class AdminSerDes {
 			sb.append("\"");
 		}
 
+		if (admin.getMiddleName() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"middleName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(admin.getMiddleName()));
+
+			sb.append("\"");
+		}
+
+		if (admin.getPassword() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"password\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(admin.getPassword()));
+
+			sb.append("\"");
+		}
+
+		if (admin.getScreenName() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"screenName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(admin.getScreenName()));
+
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
@@ -125,6 +167,27 @@ public class AdminSerDes {
 			map.put("givenName", String.valueOf(admin.getGivenName()));
 		}
 
+		if (admin.getMiddleName() == null) {
+			map.put("middleName", null);
+		}
+		else {
+			map.put("middleName", String.valueOf(admin.getMiddleName()));
+		}
+
+		if (admin.getPassword() == null) {
+			map.put("password", null);
+		}
+		else {
+			map.put("password", String.valueOf(admin.getPassword()));
+		}
+
+		if (admin.getScreenName() == null) {
+			map.put("screenName", null);
+		}
+		else {
+			map.put("screenName", String.valueOf(admin.getScreenName()));
+		}
+
 		return map;
 	}
 
@@ -151,6 +214,15 @@ public class AdminSerDes {
 			else if (Objects.equals(jsonParserFieldName, "givenName")) {
 				return false;
 			}
+			else if (Objects.equals(jsonParserFieldName, "middleName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "password")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "screenName")) {
+				return false;
+			}
 
 			return false;
 		}
@@ -173,6 +245,21 @@ public class AdminSerDes {
 			else if (Objects.equals(jsonParserFieldName, "givenName")) {
 				if (jsonParserFieldValue != null) {
 					admin.setGivenName((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "middleName")) {
+				if (jsonParserFieldValue != null) {
+					admin.setMiddleName((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "password")) {
+				if (jsonParserFieldValue != null) {
+					admin.setPassword((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "screenName")) {
+				if (jsonParserFieldValue != null) {
+					admin.setScreenName((String)jsonParserFieldValue);
 				}
 			}
 		}
@@ -256,4 +343,4 @@ public class AdminSerDes {
 	}
 
 }
-// LIFERAY-REST-BUILDER-HASH:-1003061512
+// LIFERAY-REST-BUILDER-HASH:-1490587755
