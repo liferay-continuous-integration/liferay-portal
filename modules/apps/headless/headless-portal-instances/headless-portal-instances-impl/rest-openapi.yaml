@@ -157,6 +157,7 @@ paths:
             # @review
             tags: ["PortalInstance"]
         post:
+            deprecated: true
             description:
                 Adds a new portal instance
             operationId: postPortalInstance

@@ -1,0 +1,178 @@
+components:
+    schemas:
+        Admin:
+            description:
+                Administrator information.
+            properties:
+                emailAddress:
+                    description:
+                        Administrator's email address.
+                    format: email
+                    type: string
+                familyName:
+                    description:
+                        The admin's surname (last name).
+                    type: string
+                givenName:
+                    description:
+                        The admin's first name.
+                    type: string
+                middleName:
+                    description:
+                        The admin's middle name.
+                    type: string
+                    writeOnly: true
+                password:
+                    description:
+                        The admin's initial password.
+                    format: password
+                    type: string
+                    writeOnly: true
+                screenName:
+                    description:
+                        The admin's screen name.
+                    type: string
+                    writeOnly: true
+            type: object
+        PortalInstance:
+            description:
+                A portal instance.
+            properties:
+                active:
+                    description:
+                        Whether the portal instance is active.
+                    type: boolean
+                admin:
+                    $ref: "#/components/schemas/Admin"
+                    description:
+                        The portal instance's administrator. This field is optional and is only used in the portal instance creation.
+                    writeOnly: true
+                companyId:
+                    description:
+                        internal unique key.
+                    format: int64
+                    type: integer
+                domain:
+                    description:
+                        domain used for email authentication.
+                    type: string
+                maxUsers:
+                    description:
+                        maximum number of users, or zero for unlimited.
+                    type: integer
+                portalInstanceId:
+                    description:
+                        public unique key (corresponds to company's webId field)
+                    type: string
+                siteInitializerKey:
+                    type: string
+                    writeOnly: true
+                virtualHost:
+                    type: string
+            type: object
+        PortalInstanceOperation:
+            description:
+                An asynchronous portal instance operation.
+            properties:
+                backgroundTaskId:
+                    description:
+                        internal unique key.
+                    format: int64
+                    type: integer
+                companyId:
+                    description:
+                        internal unique key of the affected portal instance.
+                    format: int64
+                    type: integer
+                completionDate:
+                    description:
+                        date the operation reached a terminal status.
+                    format: date-time
+                    type: string
+                createDate:
+                    description:
+                        date the operation was enqueued.
+                    format: date-time
+                    type: string
+                errorMessage:
+                    description:
+                        message of the error that made the operation fail.
+                    type: string
+                operationType:
+                    description:
+                        operation performed on the portal instance.
+                    enum: [ADD, COPY, DELETE, EXPORT, IMPORT]
+                    type: string
+                portalInstanceId:
+                    description:
+                        public unique key (corresponds to company's webId field)
+                    type: string
+                schemaName:
+                    description:
+                        database schema extracted by an export operation.
+                    type: string
+                status:
+                    description:
+                        execution status of the operation.
+                    enum: [CANCELLED, COMPLETED_WITH_ERRORS, FAILED, IN_PROGRESS, NEW, QUEUED, SUCCESSFUL]
+                    type: string
+            type: object
+info:
+    description:
+        "Second generation of the portal instances API. Operations run asynchronously and return a portal instance operation whose completion is polled through /portal-instance-operations/{backgroundTaskId}. Supersedes the synchronous v1.0 operations. A Java client JAR is available for use with the group ID 'com.liferay', artifact ID 'com.liferay.headless.portal.instances.client', and version '1.0.34'."
+    license:
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0.html
+    title: Liferay Portal Instances Headless API
+    version: v2.0
+openapi: 3.0.1
+paths:
+    /portal-instance-operations/{backgroundTaskId}:
+        get:
+            description:
+                Retrieves the portal instance operation
+            operationId: getPortalInstanceOperation
+            parameters:
+                -   in: path
+                    name: backgroundTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/PortalInstanceOperation"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/PortalInstanceOperation"
+                    description:
+                        The portal instance operation.
+            tags: ["PortalInstanceOperation"]
+    /portal-instances:
+        post:
+            description:
+                Adds a new portal instance asynchronously
+            operationId: postPortalInstance
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/PortalInstance"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/PortalInstance"
+            responses:
+                202:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/PortalInstanceOperation"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/PortalInstanceOperation"
+                    description:
+                        The enqueued portal instance operation.
+            tags: ["PortalInstance"]
