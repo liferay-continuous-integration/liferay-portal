@@ -6,6 +6,7 @@
 package com.liferay.layout.internal.util;
 
 import com.liferay.layout.util.LayoutServiceContextHelper;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -14,6 +15,7 @@ import com.liferay.portal.kernel.model.ColorScheme;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.Image;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutSet;
@@ -26,6 +28,7 @@ import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUti
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ImageLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
@@ -48,6 +51,7 @@ import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.webserver.WebServerServletToken;
 import com.liferay.portal.theme.ThemeDisplayFactory;
 
 import jakarta.servlet.RequestDispatcher;
@@ -119,6 +123,9 @@ public class LayoutServiceContextHelperImpl
 	private GroupLocalService _groupLocalService;
 
 	@Reference
+	private ImageLocalService _imageLocalService;
+
+	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
@@ -129,6 +136,9 @@ public class LayoutServiceContextHelperImpl
 
 	@Reference
 	private UserLocalService _userLocalService;
+
+	@Reference
+	private WebServerServletToken _webServerServletToken;
 
 	private class ServiceContextTemporarySwapper implements AutoCloseable {
 
@@ -372,79 +382,10 @@ public class LayoutServiceContextHelperImpl
 
 			ThemeDisplay themeDisplay = ThemeDisplayFactory.create();
 
-			themeDisplay.setCompany(company);
-			themeDisplay.setPortalDomain(company.getVirtualHostname());
+			_setPortalAttributes(
+				company, permissionChecker, themeDisplay, user);
 
-			boolean secure = _isSecure();
-
-			int portalServerPort = _portal.getPortalServerPort(secure);
-
-			themeDisplay.setPortalURL(
-				_portal.getPortalURL(
-					company.getVirtualHostname(), portalServerPort, secure));
-
-			themeDisplay.setPathMain(_portal.getPathMain());
-			themeDisplay.setPermissionChecker(permissionChecker);
-			themeDisplay.setRealUser(user);
-			themeDisplay.setScopeGroupId(_group.getGroupId());
-			themeDisplay.setSecure(secure);
-			themeDisplay.setServerName(company.getVirtualHostname());
-			themeDisplay.setServerPort(portalServerPort);
-			themeDisplay.setSignedIn(!user.isGuestUser());
-			themeDisplay.setSiteGroupId(_group.getGroupId());
-			themeDisplay.setTimeZone(user.getTimeZone());
-			themeDisplay.setUser(user);
-
-			if (_layout != null) {
-				themeDisplay.setLanguageId(_layout.getDefaultLanguageId());
-				themeDisplay.setLayout(_layout);
-
-				LayoutSet layoutSet = _layout.getLayoutSet();
-
-				themeDisplay.setLayoutSet(layoutSet);
-
-				themeDisplay.setLayoutTypePortlet(
-					(LayoutTypePortlet)_layout.getLayoutType());
-				themeDisplay.setLocale(
-					LocaleUtil.fromLanguageId(_layout.getDefaultLanguageId()));
-
-				ColorScheme colorScheme = _layout.getColorScheme();
-
-				Theme theme = _layout.getTheme();
-
-				if (theme == null) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(_layout.getThemeId() + " is not registered");
-					}
-
-					colorScheme = _themeLocalService.getColorScheme(
-						company.getCompanyId(), layoutSet.getThemeId(),
-						layoutSet.getColorSchemeId());
-					theme = _themeLocalService.getTheme(
-						company.getCompanyId(), layoutSet.getThemeId());
-				}
-
-				if (theme != null) {
-					themeDisplay.setLookAndFeel(theme, colorScheme);
-				}
-				else if (_log.isDebugEnabled()) {
-					_log.debug(
-						"Unable to get theme for layout PLID " +
-							_layout.getPlid());
-				}
-
-				themeDisplay.setPlid(_layout.getPlid());
-				themeDisplay.setSiteDefaultLocale(
-					_portal.getSiteDefaultLocale(_group.getGroupId()));
-			}
-			else {
-				Locale locale = _portal.getSiteDefaultLocale(
-					_group.getGroupId());
-
-				themeDisplay.setLanguageId(LocaleUtil.toLanguageId(locale));
-				themeDisplay.setLocale(locale);
-				themeDisplay.setSiteDefaultLocale(locale);
-			}
+			_setLayoutAttributes(company, themeDisplay);
 
 			return themeDisplay;
 		}
@@ -468,6 +409,33 @@ public class LayoutServiceContextHelperImpl
 			}
 			else if (name != null) {
 				_attributes.remove(name);
+			}
+		}
+
+		private void _setCompanyLogo(
+			Company company, ThemeDisplay themeDisplay) {
+
+			String companyLogo = _portal.getPathImage() + "/company_logo";
+
+			long companyLogoId = company.getLogoId();
+
+			if (companyLogoId <= 0) {
+				themeDisplay.setCompanyLogo(companyLogo);
+
+				return;
+			}
+
+			themeDisplay.setCompanyLogo(
+				StringBundler.concat(
+					companyLogo, "?img_id=", companyLogoId, "&t=",
+					_webServerServletToken.getToken(companyLogoId)));
+
+			Image companyLogoImage = _imageLocalService.getCompanyLogo(
+				companyLogoId);
+
+			if (companyLogoImage != null) {
+				themeDisplay.setCompanyLogoHeight(companyLogoImage.getHeight());
+				themeDisplay.setCompanyLogoWidth(companyLogoImage.getWidth());
 			}
 		}
 
@@ -535,6 +503,106 @@ public class LayoutServiceContextHelperImpl
 			themeDisplay.setResponse(_httpServletResponse);
 
 			return attributes;
+		}
+
+		private void _setLayoutAttributes(
+				Company company, ThemeDisplay themeDisplay)
+			throws PortalException {
+
+			if (_layout == null) {
+				Locale locale = _portal.getSiteDefaultLocale(
+					_group.getGroupId());
+
+				themeDisplay.setLanguageId(LocaleUtil.toLanguageId(locale));
+				themeDisplay.setLocale(locale);
+				themeDisplay.setSiteDefaultLocale(locale);
+
+				return;
+			}
+
+			LayoutSet layoutSet = _layout.getLayoutSet();
+
+			themeDisplay.setLanguageId(_layout.getDefaultLanguageId());
+			themeDisplay.setLayout(_layout);
+			themeDisplay.setLayoutSet(layoutSet);
+			themeDisplay.setLayoutTypePortlet(
+				(LayoutTypePortlet)_layout.getLayoutType());
+			themeDisplay.setLocale(
+				LocaleUtil.fromLanguageId(_layout.getDefaultLanguageId()));
+			themeDisplay.setPlid(_layout.getPlid());
+			themeDisplay.setSiteDefaultLocale(
+				_portal.getSiteDefaultLocale(_group.getGroupId()));
+
+			ColorScheme colorScheme = _layout.getColorScheme();
+
+			Theme theme = _layout.getTheme();
+
+			if (theme == null) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(_layout.getThemeId() + " is not registered");
+				}
+
+				colorScheme = _themeLocalService.getColorScheme(
+					company.getCompanyId(), layoutSet.getThemeId(),
+					layoutSet.getColorSchemeId());
+				theme = _themeLocalService.getTheme(
+					company.getCompanyId(), layoutSet.getThemeId());
+			}
+
+			if (theme == null) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Unable to get theme for layout PLID " +
+							_layout.getPlid());
+				}
+
+				return;
+			}
+
+			themeDisplay.setLookAndFeel(theme, colorScheme);
+		}
+
+		private void _setPortalAttributes(
+				Company company, PermissionChecker permissionChecker,
+				ThemeDisplay themeDisplay, User user)
+			throws PortalException {
+
+			String pathContext = _portal.getPathContext();
+			boolean secure = _isSecure();
+			String virtualHostname = company.getVirtualHostname();
+
+			int portalServerPort = _portal.getPortalServerPort(secure);
+
+			String portalURL = _portal.getPortalURL(
+				virtualHostname, portalServerPort, secure);
+
+			themeDisplay.setCompany(company);
+			themeDisplay.setPathContext(pathContext);
+			themeDisplay.setPathFriendlyURLPrivateGroup(
+				_portal.getPathFriendlyURLPrivateGroup());
+			themeDisplay.setPathFriendlyURLPrivateUser(
+				_portal.getPathFriendlyURLPrivateUser());
+			themeDisplay.setPathFriendlyURLPublic(
+				_portal.getPathFriendlyURLPublic());
+			themeDisplay.setPathImage(_portal.getPathImage());
+			themeDisplay.setPathMain(_portal.getPathMain());
+			themeDisplay.setPermissionChecker(permissionChecker);
+			themeDisplay.setPortalDomain(virtualHostname);
+			themeDisplay.setPortalURL(portalURL);
+			themeDisplay.setRealUser(user);
+			themeDisplay.setScopeGroupId(_group.getGroupId());
+			themeDisplay.setSecure(secure);
+			themeDisplay.setServerName(virtualHostname);
+			themeDisplay.setServerPort(portalServerPort);
+			themeDisplay.setSignedIn(!user.isGuestUser());
+			themeDisplay.setSiteGroupId(_group.getGroupId());
+			themeDisplay.setThemeCssFastLoad(PropsValues.THEME_CSS_FAST_LOAD);
+			themeDisplay.setThemeJsFastLoad(PropsValues.JAVASCRIPT_FAST_LOAD);
+			themeDisplay.setTimeZone(user.getTimeZone());
+			themeDisplay.setURLPortal(portalURL.concat(pathContext));
+			themeDisplay.setUser(user);
+
+			_setCompanyLogo(company, themeDisplay);
 		}
 
 		private final Map<String, Object> _attributes;
