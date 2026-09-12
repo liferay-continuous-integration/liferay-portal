@@ -638,6 +638,213 @@ mariadb.executable=${mariadb.executable}]]></echo>
 		</sequential>
 	</macrodef>
 
+	<macrodef name="format-js-unit-test-results">
+		<attribute default="${basedir}" name="base.dir" />
+		<attribute default="${basedir}" name="dir" />
+
+		<sequential>
+			<local name="test.batch.report.type" />
+
+			<propertycopy from="test.batch.report.type[${test.batch.name}]" name="test.batch.report.type" silent="true" />
+
+			<if>
+				<equals arg1="${test.batch.report.type}" arg2="test-file" />
+				<then>
+					<local name="test.results.base.dir" />
+
+					<property location="@{base.dir}" name="test.results.base.dir" />
+
+					<for param="test.results.file">
+						<path>
+							<fileset
+								dir="@{dir}"
+								erroronmissingdir="false"
+								excludes="**/node_modules/**"
+								includes="**/TEST-frontend-js.xml"
+							/>
+						</path>
+						<sequential>
+							<beanshell>
+								<![CDATA[
+									import com.liferay.jenkins.results.parser.Dom4JUtil;
+									import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
+									import com.liferay.jenkins.results.parser.test.clazz.file.TestClassFile;
+									import com.liferay.jenkins.results.parser.test.clazz.file.TestClassFileFactory;
+									import com.liferay.jenkins.results.parser.test.clazz.file.TestClassFileMethod;
+
+									import java.io.File;
+
+									import java.util.ArrayList;
+									import java.util.List;
+									import java.util.Objects;
+
+									import org.dom4j.Document;
+									import org.dom4j.Element;
+									import org.dom4j.Node;
+									import org.dom4j.Text;
+
+									File testResultsFile = new File("@{test.results.file}");
+
+									if (!testResultsFile.exists()) {
+										return;
+									}
+
+									File baseDir = new File(project.getProperty("test.results.base.dir"));
+
+									String baseDirPath = JenkinsResultsParserUtil.getCanonicalPath(baseDir);
+
+									File projectDir = testResultsFile.getParentFile();
+
+									String projectDirPath = JenkinsResultsParserUtil.getCanonicalPath(projectDir);
+
+									String projectPath = projectDirPath;
+
+									if (projectDirPath.startsWith(baseDirPath + "/")) {
+										projectPath = projectDirPath.substring(baseDirPath.length() + 1);
+									}
+
+									Document document = Dom4JUtil.parse(JenkinsResultsParserUtil.read(testResultsFile));
+
+									Element rootElement = document.getRootElement();
+
+									List testSuiteElements = new ArrayList();
+
+									if (Objects.equals(rootElement.getName(), "testsuites")) {
+										testSuiteElements.addAll(rootElement.elements("testsuite"));
+									}
+									else {
+										testSuiteElements.add(rootElement);
+									}
+
+									for (Element testSuiteElement : testSuiteElements) {
+										testSuiteElement.addAttribute("package", projectPath);
+
+										String testSuiteName = testSuiteElement.attributeValue("name");
+
+										for (Element testCaseElement : testSuiteElement.elements("testcase")) {
+											String testCaseClassName = null;
+											String testCaseName = null;
+
+											if ((testSuiteName != null) && testSuiteName.contains("/")) {
+												testCaseClassName = projectPath + "/" + testSuiteName;
+											}
+											else {
+												String className = testCaseElement.attributeValue("classname");
+
+												if (className == null) {
+													continue;
+												}
+
+												String classPath = className.replace('.', '/');
+
+												String projectName = projectPath;
+
+												int index = projectName.lastIndexOf("/");
+
+												if (index != -1) {
+													projectName = projectName.substring(index + 1);
+												}
+
+												index = classPath.indexOf(projectName + "/");
+
+												if (index != -1) {
+													classPath = classPath.substring(index + projectName.length() + 1);
+												}
+
+												testCaseClassName = projectPath + "/" + classPath;
+
+												String name = testCaseElement.attributeValue("name");
+
+												File dir = new File(baseDir, testCaseClassName);
+
+												if ((name == null) || !dir.isDirectory()) {
+													continue;
+												}
+
+												List testClassFiles = new ArrayList();
+
+												for (File file : dir.listFiles()) {
+													TestClassFile testClassFile = TestClassFileFactory.newTestClassFile(file);
+
+													if (testClassFile != null) {
+														testClassFiles.add(testClassFile);
+													}
+												}
+
+												TestClassFile matchingTestClassFile = null;
+												TestClassFileMethod matchingTestMethod = null;
+
+												for (TestClassFile testClassFile : testClassFiles) {
+													for (TestClassFileMethod testMethod : testClassFile.getTestMethods()) {
+														if (testMethod.matches(name) || testMethod.matchesPattern(name)) {
+															matchingTestClassFile = testClassFile;
+															matchingTestMethod = testMethod;
+
+															break;
+														}
+													}
+
+													if (matchingTestMethod != null) {
+														continue;
+													}
+												}
+
+												if ((matchingTestClassFile == null) || (matchingTestMethod == null)) {
+													continue;
+												}
+
+												testCaseClassName = matchingTestClassFile.getRelativePath(baseDir);
+
+												if (!matchingTestMethod.isDynamic()) {
+													testCaseElement.addAttribute("name", matchingTestMethod.getFullName());
+												}
+											}
+
+											testCaseElement.addAttribute("classname", testCaseClassName);
+										}
+									}
+
+									List elements = new ArrayList();
+
+									elements.add(rootElement);
+
+									while (!elements.isEmpty()) {
+										Element element = (Element)elements.remove(0);
+
+										List content = element.content();
+
+										for (int i = content.size() - 1; i >= 0; i--) {
+											Node node = (Node)content.get(i);
+
+											if (node instanceof Element) {
+												elements.add(node);
+
+												continue;
+											}
+
+											if (!(node instanceof Text)) {
+												continue;
+											}
+
+											String text = node.getText();
+
+											if (text.trim().isEmpty()) {
+												content.remove(i);
+											}
+										}
+									}
+
+									JenkinsResultsParserUtil.write(testResultsFile, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + Dom4JUtil.format(rootElement));
+
+									System.out.println("Updated " + testResultsFile);
+								]]>
+							</beanshell>
+						</sequential>
+					</for>
+				</then>
+			</if>
+		</sequential>
+	</macrodef>
 	<macrodef name="get-console-log-failure-message">
 		<attribute name="console.log" />
 
@@ -8696,6 +8903,8 @@ information. Make sure to commit in all format-javadoc results.
 					</sequential>
 				</for>
 
+				<format-js-unit-test-results base.dir="${basedir}" dir="modules" />
+
 				<replace
 					dir="modules"
 					includes="**/TEST-frontend-js.xml"
@@ -10904,6 +11113,10 @@ junit.jvm.override.version=21</echo>
 				<run-workspaces-js-unit-test test.class.group="${modules.test.class.group}" test.gradle.args="--continue" />
 
 				<lstopwatch action="total" name="test.execution.duration" />
+
+				<format-js-unit-test-results base.dir="${basedir}" dir="workspaces" />
+
+				<format-js-unit-test-results base.dir="${liferay.portal.private.dir}" dir="${liferay.portal.private.dir}/workspaces" />
 
 				<for param="test.results.file">
 					<path>
